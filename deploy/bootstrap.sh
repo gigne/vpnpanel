@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # =========================================================================
-# VPN Panel — one-shot server bootstrap (Ubuntu 24.04)
+# VPN Panel - one-shot server bootstrap (Ubuntu 24.04)
 #
 # Sets up EVERYTHING on a fresh Ubuntu 24.04 VPS:
 #   1. Swap (for low-memory droplets)
@@ -84,7 +84,7 @@ log "Step 1/6: swap (${SWAP_SIZE})"
 if swapon --show | grep -q .; then
     skip "swap already configured"
 elif [ -f /swapfile ]; then
-    skip "/swapfile exists but not active — activating"
+    skip "/swapfile exists but not active - activating"
     swapon /swapfile || true
 else
     fallocate -l "$SWAP_SIZE" /swapfile

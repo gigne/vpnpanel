@@ -41,8 +41,14 @@ Route::middleware(['auth', '2fa'])->group(function () {
 
         // IKEv2 users
         Route::resource('ikev2-users', Ikev2UserController::class);
-        Route::get('/ikev2-users/{ikev2_user}/profile/download', [Ikev2UserController::class, 'downloadProfile'])
-            ->name('ikev2-users.profile.download');
+        Route::get('/ikev2-users/{ikev2_user}/download', [Ikev2UserController::class, 'showDownload'])
+            ->name('ikev2-users.download');
+        Route::get('/ikev2-users/{ikev2_user}/download/p12', [Ikev2UserController::class, 'downloadP12'])
+            ->name('ikev2-users.download.p12');
+        Route::get('/ikev2-users/{ikev2_user}/download/sswan', [Ikev2UserController::class, 'downloadSswan'])
+            ->name('ikev2-users.download.sswan');
+        Route::get('/ikev2-users/{ikev2_user}/download/mobileconfig', [Ikev2UserController::class, 'downloadProfile'])
+            ->name('ikev2-users.download.mobileconfig');
         Route::post('/ikev2-users/{ikev2_user}/regenerate-certificate', [Ikev2UserController::class, 'regenerateCertificate'])
             ->name('ikev2-users.regenerate-certificate');
 

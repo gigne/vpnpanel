@@ -158,7 +158,7 @@ class Ikev2UserController extends Controller
     }
 
     /**
-     * Download .mobileconfig profile.
+     * Download .mobileconfig profile for iOS/macOS.
      */
     public function downloadProfile(Ikev2User $ikev2User, Request $request)
     {
@@ -172,6 +172,88 @@ class Ikev2UserController extends Controller
         return response($mobileConfig, 200, [
             'Content-Type' => 'application/x-apple-aspen-configuration',
             'Content-Disposition' => 'attachment; filename="' . $ikev2User->username . '.mobileconfig"',
+        ]);
+    }
+
+    /**
+     * Show consolidated download page with all profile options and instructions.
+     */
+    public function showDownload(Ikev2User $ikev2User, Request $request)
+    {
+        if (!$ikev2User->has_certificate) {
+            abort(404, 'Certificate not available');
+        }
+
+        try {
+            $key = 'ikev2_download_p12_' . $ikev2User->id;
+            $stored = $request->session()->get($key);
+
+            if ($stored === null) {
+                $bundle = $this->certService->generateAndroidP12($ikev2User);
+                $request->session()->put($key, $bundle);
+            } else {
+                $bundle = ['p12_base64' => $stored['p12_base64'], 'p12_password' => $stored['p12_password']];
+            }
+
+            return view('ikev2-users.download', [
+                'user' => $ikev2User,
+                'password' => $bundle['p12_password'],
+            ]);
+        } catch (\Throwable $e) {
+            Log::error('IKEv2 P12 generation failed: ' . $e->getMessage());
+
+            return back()->with('error', 'Failed to generate profiles: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Return raw binary .p12 file content — triggers actual download in browser.
+     */
+    public function downloadP12(Ikev2User $ikev2User, Request $request)
+    {
+        if (!$ikev2User->has_certificate) {
+            abort(404, 'Certificate not available');
+        }
+
+        try {
+            $key = 'ikev2_download_p12_' . $ikev2User->id;
+            $stored = $request->session()->get($key);
+
+            if ($stored === null) {
+                $bundle = $this->certService->generateAndroidP12($ikev2User);
+                $request->session()->put($key, $bundle);
+            } else {
+                $bundle = ['p12_base64' => $stored['p12_base64'], 'p12_password' => $stored['p12_password']];
+            }
+
+            return response(base64_decode($bundle['p12_base64']), 200, [
+                'Content-Type'             => 'application/x-pkcs12',
+                'Content-Disposition'      => 'attachment; filename="' . $ikev2User->username . '.p12"',
+                'Content-Length'           => strlen(base64_decode($bundle['p12_base64'])),
+                'Cache-Control'            => 'no-store',
+            ]);
+        } catch (\Throwable $e) {
+            Log::error('IKEv2 P12 download failed: ' . $e->getMessage());
+
+            return response()->json(['error' => 'Failed to generate P12 file'], 500);
+        }
+    }
+
+    /**
+     * Download .sswan JSON profile for Android VPN Manager apps.
+     */
+    public function downloadSswan(Ikev2User $ikev2User, Request $request)
+    {
+        if (!$ikev2User->has_certificate) {
+            abort(404, 'Certificate not available');
+        }
+
+        $serverAddress = config('vpnpanel.ikev2.server_id', config('vpnpanel.domain', 'vpn.example.com'));
+        $profile = $this->certService->generateSswanProfile($ikev2User, $serverAddress);
+
+        return response($profile, 200, [
+            'Content-Type'        => 'application/json',
+            'Content-Disposition' => 'attachment; filename="' . $ikev2User->username . '.sswan"',
         ]);
     }
 

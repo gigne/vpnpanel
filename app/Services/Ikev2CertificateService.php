@@ -449,4 +449,133 @@ class Ikev2CertificateService
 
         return $mobileConfig;
     }
+
+    /**
+     * Generate a PKCS#12 (.p12) bundle for Android native IKEv2 clients.
+     *
+     * Contains user certificate + private key + CA certificate, all bundled
+     * into a single password-protected file that can be loaded directly into
+     * Android's built-in IPSec/IKEv2 VPN client (Settings → VPN → Add).
+     *
+     * @return array{p12_base64: string, p12_password: string}
+     */
+    public function generateAndroidP12(Ikev2User $user): array
+    {
+        if (! $user->has_certificate) {
+            throw new \RuntimeException('No certificate available for user: ' . $user->username);
+        }
+
+        // Use the user's own password as the P12 bundle password.
+        $p12Password = (string) $user->password;
+        $p12Output = '';
+
+        // Extract the CA certificate as a standalone PEM to embed in the bundle.
+        $caCert = $this->getCACertificate();
+
+        $success = openssl_pkcs12_export(
+            $user->certificate_pem,
+            $p12Output,
+            $user->private_key_pem,
+            $p12Password,
+            [
+                'extracerts' => [$caCert],
+            ]
+        );
+
+        if ($success === false) {
+            throw new \RuntimeException('Failed to build Android P12 bundle: ' . openssl_error_string());
+        }
+
+        return [
+            'p12_base64' => base64_encode($p12Output),
+            'p12_password' => $p12Password,
+        ];
+    }
+
+    /**
+     * Generate an .sswan JSON profile matching hwdsl2's IKEv2 export format.
+     *
+     * Output matches the structure produced by https://vpnsetup.net (Libreswan/IPsec),
+     * with embedded base64 P12 containing the client cert + key + CA, so users can
+     * import directly into Android VPN Manager without needing a separate .p12 file.
+     *
+     * @return string JSON content
+     */
+    public function generateSswanProfile(Ikev2User $user, string $serverAddress): string
+    {
+        if (! $user->has_certificate) {
+            throw new \RuntimeException('No certificate available for user: ' . $user->username);
+        }
+
+        // Build a base64-encoded P12 (PKCS#12) containing client cert + key + CA.
+        $password = (string) $user->password;
+        $p12Output = '';
+        $caCert = $this->getCACertificate();
+
+        $ok = openssl_pkcs12_export(
+            $user->certificate_pem,
+            $p12Output,
+            $user->private_key_pem,
+            $password,
+            ['extracerts' => [$caCert]]
+        );
+
+        if ($ok === false) {
+            throw new \RuntimeException('Failed to build P12 for SSWAN profile: ' . openssl_error_string());
+        }
+
+        $p12Base64 = base64_encode($p12Output);
+
+        $profile = [
+            'uuid'      => bin2hex(random_bytes(16)),
+            'name'      => 'IKEv2 VPN ' . $user->username,
+            'type'      => 'ikev2-cert',
+            'remote'    => ['addr' => $serverAddress],
+            'local'     => ['p12' => $p12Base64],
+            'ike-proposal'  => 'aes256-sha256-modp2048',
+            'esp-proposal'  => 'aes128gcm16',
+        ];
+
+        return json_encode($profile, JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT);
+    }
+
+    /**
+     * Get plain-text installation instructions for Android native IKEv2 client.
+     * Returns a multi-line text string that can be displayed/copied by the user.
+     */
+    public function generateAndroidManualInstructions(Ikev2User $user, string $serverAddress, string $p12Password): string
+    {
+        return <<<INSTRUCTIONS
+=== Android Native IKEv2 VPN Setup ===
+
+1. Install .p12 Certificate
+   - Send/download the downloaded file "{$user->username}.p12" to your phone
+   - Go to Settings > Security > Encryption & credentials > Install certificate > VPN & app user credential
+   - Select the .p12 file and enter password: {$p12Password}
+
+2. Add VPN Profile
+   - Go to Settings > Network & internet > VPN
+   - Tap "+" or "Add VPN Profile"
+   - Name: {$user->username}_IKEv2
+   - Type: IKEv2/IPsec certificate
+   - Server address: {$serverAddress}
+   - IKEv2 Identity Certificate: (leave empty)
+   - User authentication: (leave empty or choose default)
+   - IPSEC user identity: {$user->username}
+   - IPSEC secret (PSK): (leave empty unless configured)
+   - Save
+
+3. Connect
+   - Tap the saved profile to connect
+   - If prompted, select the installed certificate
+
+=====================================
+
+File Summary:
+- Username: {$user->username}
+- Password (EAP mode only): {$user->password}
+- P12 Password: {$p12Password}
+- Server: {$serverAddress}
+INSTRUCTIONS;
+    }
 }

@@ -53,9 +53,6 @@
                                 <td class="px-6 py-3 space-x-1 whitespace-nowrap">
                                     <a href="{{ route('ikev2-users.show', $user) }}" class="text-indigo-600 hover:underline text-xs">View</a>
                                     <a href="{{ route('ikev2-users.edit', $user) }}" class="text-indigo-600 hover:underline text-xs">Edit</a>
-                                    @if ($user->has_certificate)
-                                        <a href="{{ route('ikev2-users.profile.download', $user) }}" class="text-blue-600 hover:underline text-xs">Profile</a>
-                                    @endif
                                     <form method="POST" action="{{ route('ikev2-users.destroy', $user) }}" class="inline"
                                           onsubmit="return confirm('Delete {{ $user->username }}?');">
                                         @csrf @method('DELETE')
