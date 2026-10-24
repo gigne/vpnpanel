@@ -48,8 +48,8 @@
                 <button class="px-4 py-2 bg-gray-800 rounded-md text-white text-sm">Filter</button>
             </form>
 
-            <!-- Table -->
-            <div class="bg-white shadow-sm rounded-lg overflow-hidden">
+            <!-- Desktop Table -->
+            <div class="hidden lg:block bg-white shadow-sm rounded-lg overflow-hidden">
                 <table class="w-full text-sm">
                     <thead class="bg-gray-50 text-left text-gray-500">
                         <tr>
@@ -110,6 +110,66 @@
                 <div class="px-6 py-3 border-t border-gray-100">
                     {{ $vpnUsers->links() }}
                 </div>
+            </div>
+
+            <!-- Mobile Cards -->
+            <div class="lg:hidden space-y-3">
+                @forelse ($vpnUsers as $vpnUser)
+                    <div class="bg-white shadow-sm rounded-lg overflow-hidden">
+                        <div class="bg-gray-50 px-4 py-3 border-b border-gray-100 flex justify-between items-center">
+                            <h3 class="font-semibold text-gray-800">
+                                {{ $vpnUser->username }}
+                                @if ($vpnUser->trashed())
+                                    <span class="text-xs text-red-500 ml-1">(deleted)</span>
+                                @endif
+                            </h3>
+                            @if (! $vpnUser->is_enabled)
+                                <span class="px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-600">disabled</span>
+                            @elseif ($vpnUser->isExpired())
+                                <span class="px-2 py-0.5 rounded text-xs font-medium bg-yellow-100 text-yellow-800">expired</span>
+                            @else
+                                <span class="px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">active</span>
+                            @endif
+                        </div>
+                        <div class="divide-y divide-gray-50">
+                            <div class="flex justify-between items-center px-4 py-2">
+                                <span class="text-xs font-medium text-gray-500">VPN IP</span>
+                                <span class="text-sm font-mono text-gray-700">{{ $vpnUser->assigned_ip ?? '-' }}</span>
+                            </div>
+                            <div class="flex justify-between items-center px-4 py-2">
+                                <span class="text-xs font-medium text-gray-500">Expires</span>
+                                <span class="text-sm text-gray-700">{{ $vpnUser->expired_at?->format('Y-m-d') ?? '-' }}</span>
+                            </div>
+                            @if ($vpnUser->notes)
+                            <div class="flex justify-between items-center px-4 py-2">
+                                <span class="text-xs font-medium text-gray-500">Notes</span>
+                                <span class="text-sm text-gray-700 text-right max-w-[200px] truncate">{{ $vpnUser->notes }}</span>
+                            </div>
+                            @endif
+                        </div>
+                        <div class="px-4 py-2 border-t border-gray-100 flex gap-2 flex-wrap">
+                            <a href="{{ route('vpn-users.edit', $vpnUser) }}" class="px-2 py-1 bg-indigo-50 text-indigo-700 rounded text-xs font-medium hover:bg-indigo-100">Edit</a>
+                            <form method="POST" action="{{ route('vpn-users.toggle', $vpnUser) }}" class="inline">
+                                @csrf
+                                <button class="px-2 py-1 bg-gray-50 text-gray-700 rounded text-xs font-medium hover:bg-gray-100">{{ $vpnUser->is_enabled ? 'Disable' : 'Enable' }}</button>
+                            </form>
+                            <form method="POST" action="{{ route('vpn-users.reset-password', $vpnUser) }}" class="inline">
+                                @csrf
+                                <button class="px-2 py-1 bg-gray-50 text-gray-700 rounded text-xs font-medium hover:bg-gray-100">Reset Password</button>
+                            </form>
+                            <form method="POST" action="{{ route('vpn-users.destroy', $vpnUser) }}"
+                                  onsubmit="return confirm('Delete VPN user {{ $vpnUser->username }}?');">
+                                @csrf
+                                @method('DELETE')
+                                <button class="px-2 py-1 bg-red-50 text-red-700 rounded text-xs font-medium hover:bg-red-100">Delete</button>
+                            </form>
+                        </div>
+                    </div>
+                @empty
+                    <div class="bg-white shadow-sm rounded-lg p-8 text-center text-gray-400 lg:hidden">
+                        No VPN users found.
+                    </div>
+                @endforelse
             </div>
         </div>
     </div>

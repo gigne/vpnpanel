@@ -34,8 +34,8 @@
                 <button class="px-4 py-2 bg-gray-800 rounded-md text-white text-sm">Search</button>
             </form>
 
-            <!-- Table -->
-            <div class="bg-white shadow-sm rounded-lg overflow-hidden">
+            <!-- Desktop Table -->
+            <div class="hidden lg:block bg-white shadow-sm rounded-lg overflow-hidden">
                 <table class="w-full text-sm">
                     <thead class="bg-gray-50 text-left text-gray-500">
                         <tr>
@@ -94,6 +94,66 @@
                 <div class="px-6 py-3 border-t border-gray-100">
                     {{ $mikrotiks->links() }}
                 </div>
+            </div>
+
+            <!-- Mobile Cards -->
+            <div class="lg:hidden space-y-3">
+                @forelse ($mikrotiks as $mikrotik)
+                    <div class="bg-white shadow-sm rounded-lg overflow-hidden">
+                        <div class="bg-gray-50 px-4 py-3 border-b border-gray-100 flex justify-between items-center">
+                            <h3 class="font-semibold text-gray-800">{{ $mikrotik->site_name }}</h3>
+                            @if ($mikrotik->is_online)
+                                <span class="px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">online</span>
+                            @else
+                                <span class="px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800">offline</span>
+                            @endif
+                        </div>
+                        <div class="divide-y divide-gray-50">
+                            <div class="flex justify-between items-center px-4 py-2">
+                                <span class="text-xs font-medium text-gray-500">VPN IP</span>
+                                <span class="text-sm font-mono text-gray-700">{{ $mikrotik->vpn_ip }}</span>
+                            </div>
+                            <div class="flex justify-between items-center px-4 py-2">
+                                <span class="text-xs font-medium text-gray-500">Username</span>
+                                <span class="text-sm font-mono text-gray-700">{{ $mikrotik->vpn_username }}</span>
+                            </div>
+                            <div class="flex justify-between items-center px-4 py-2">
+                                <span class="text-xs font-medium text-gray-500">Last Seen</span>
+                                <span class="text-xs text-gray-600">{{ $mikrotik->last_seen_at?->diffForHumans() ?? '-' }}</span>
+                            </div>
+                            <div class="flex justify-between items-center px-4 py-2">
+                                <span class="text-xs font-medium text-gray-500">Winbox</span>
+                                <a href="{{ $mikrotik->winbox_url }}" class="text-xs text-indigo-600 hover:underline truncate max-w-[180px]">{{ $mikrotik->winbox_url }}</a>
+                            </div>
+                            <div class="flex justify-between items-center px-4 py-2">
+                                <span class="text-xs font-medium text-gray-500">WebFig</span>
+                                <a href="{{ $mikrotik->webfig_url }}" class="text-xs text-indigo-600 hover:underline truncate max-w-[180px]">{{ $mikrotik->webfig_url }}</a>
+                            </div>
+                        </div>
+                        <div class="px-4 py-2 border-t border-gray-100 flex gap-2 flex-wrap">
+                            <a href="{{ route('mikrotiks.show', $mikrotik) }}" class="px-2 py-1 bg-indigo-50 text-indigo-700 rounded text-xs font-medium hover:bg-indigo-100">Show</a>
+                            <a href="{{ route('mikrotiks.edit', $mikrotik) }}" class="px-2 py-1 bg-gray-50 text-gray-700 rounded text-xs font-medium hover:bg-gray-100">Edit</a>
+                            <form method="POST" action="{{ route('mikrotiks.check', $mikrotik) }}" class="inline">
+                                @csrf
+                                <button class="px-2 py-1 bg-gray-50 text-gray-700 rounded text-xs font-medium hover:bg-gray-100">Check</button>
+                            </form>
+                            <form method="POST" action="{{ route('mikrotiks.backup', $mikrotik) }}" class="inline">
+                                @csrf
+                                <button class="px-2 py-1 bg-gray-50 text-gray-700 rounded text-xs font-medium hover:bg-gray-100">Backup</button>
+                            </form>
+                            <form method="POST" action="{{ route('mikrotiks.destroy', $mikrotik) }}"
+                                  onsubmit="return confirm('Decommission MikroTik {{ $mikrotik->site_name }}?');">
+                                @csrf
+                                @method('DELETE')
+                                <button class="px-2 py-1 bg-red-50 text-red-700 rounded text-xs font-medium hover:bg-red-100">Delete</button>
+                            </form>
+                        </div>
+                    </div>
+                @empty
+                    <div class="bg-white shadow-sm rounded-lg p-8 text-center text-gray-400 lg:hidden">
+                        No MikroTik devices yet.
+                    </div>
+                @endforelse
             </div>
         </div>
     </div>

@@ -70,34 +70,39 @@
 
             <div class="lg:hidden space-y-3">
                 @forelse ($users as $user)
-                    <div class="bg-white shadow-sm rounded-lg p-4">
-                        <div class="flex items-start justify-between mb-3">
-                            <div>
-                                <h3 class="font-semibold text-gray-800">{{ $user->username }}</h3>
-                                <p class="text-xs font-mono text-gray-500 mt-1">{{ $user->assigned_ip ?? '—' }}</p>
-                            </div>
+                    <div class="bg-white border border-gray-200 rounded-lg overflow-hidden">
+                        <div class="px-4 py-3 flex items-center justify-between border-b border-gray-100">
+                            <h3 class="font-semibold text-gray-800">{{ $user->username }}</h3>
                             <span class="px-2 py-0.5 rounded text-xs font-medium {{ $user->isActive() ? 'bg-green-100 text-green-800' : ($user->isExpired() ? 'bg-yellow-100 text-yellow-800' : 'bg-gray-100 text-gray-600') }}">
                                 {{ $user->is_enabled ? ($user->isExpired() ? 'expired' : 'active') : 'disabled' }}
                             </span>
                         </div>
-                        <div class="grid grid-cols-2 gap-2 text-sm mb-3">
-                            <div class="text-gray-500">Expires</div>
-                            <div class="text-gray-700">{{ $user->expired_at?->format('Y-m-d') ?? '—' }}</div>
-                            <div class="text-gray-500">Cert</div>
-                            <div class="text-gray-700">{{ $user->has_certificate ? '✓' : '—' }}</div>
+                        <div class="divide-y divide-gray-50">
+                            <div class="flex items-center justify-between px-4 py-2">
+                                <span class="text-xs font-medium text-gray-400 uppercase tracking-wide">VPN IP</span>
+                                <span class="text-sm text-gray-700 font-mono">{{ $user->assigned_ip ?? '—' }}</span>
+                            </div>
+                            <div class="flex items-center justify-between px-4 py-2">
+                                <span class="text-xs font-medium text-gray-400 uppercase tracking-wide">Expires</span>
+                                <span class="text-sm text-gray-700">{{ $user->expired_at?->format('Y-m-d') ?? '—' }}</span>
+                            </div>
+                            <div class="flex items-center justify-between px-4 py-2">
+                                <span class="text-xs font-medium text-gray-400 uppercase tracking-wide">Cert</span>
+                                <span class="text-sm text-gray-700">{{ $user->has_certificate ? '✓' : '—' }}</span>
+                            </div>
                         </div>
-                        <div class="flex gap-2 pt-2 border-t border-gray-100">
-                            <a href="{{ route('ikev2-users.show', $user) }}" class="flex-1 text-center px-3 py-1.5 bg-indigo-50 text-indigo-700 rounded text-xs font-medium hover:bg-indigo-100">View</a>
-                            <a href="{{ route('ikev2-users.edit', $user) }}" class="flex-1 text-center px-3 py-1.5 bg-indigo-50 text-indigo-700 rounded text-xs font-medium hover:bg-indigo-100">Edit</a>
+                        <div class="flex border-t border-gray-100">
+                            <a href="{{ route('ikev2-users.show', $user) }}" class="flex-1 text-center px-2 py-2 text-xs font-medium text-indigo-600 hover:bg-indigo-50">View</a>
+                            <a href="{{ route('ikev2-users.edit', $user) }}" class="flex-1 text-center px-2 py-2 text-xs font-medium text-indigo-600 hover:bg-indigo-50">Edit</a>
                             <form method="POST" action="{{ route('ikev2-users.destroy', $user) }}" class="flex-1"
                                   onsubmit="return confirm('Delete {{ $user->username }}?');">
                                 @csrf @method('DELETE')
-                                <button type="submit" class="w-full px-3 py-1.5 bg-red-50 text-red-700 rounded text-xs font-medium hover:bg-red-100">Del</button>
+                                <button type="submit" class="w-full text-xs font-medium text-red-600 hover:bg-red-50">Del</button>
                             </form>
                         </div>
                     </div>
                 @empty
-                    <div class="bg-white shadow-sm rounded-lg p-8 text-center text-gray-400">No IKEv2 users found.</div>
+                    <div class="bg-white border border-gray-200 rounded-lg p-8 text-center text-gray-400">No IKEv2 users found.</div>
                 @endforelse
                 <div class="px-2">{{ $users->links() }}</div>
             </div>
