@@ -97,7 +97,7 @@
                             <form method="POST" action="{{ route('ikev2-users.destroy', $user) }}" class="flex-1"
                                   onsubmit="return confirm('Delete {{ $user->username }}?');">
                                 @csrf @method('DELETE')
-                                <button type="submit" class="w-full text-xs font-medium text-red-600 hover:bg-red-50">Del</button>
+                                <button type="submit" class="w-full text-center px-2 py-2 text-xs font-medium text-red-600 hover:bg-red-50">Del</button>
                             </form>
                         </div>
                     </div>
